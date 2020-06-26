@@ -3,6 +3,7 @@ BLOGDESC = hey
 TEMPLATE = default
 BLOGROOT =
 # You may set blogroot your domain for non relative urls.
+# RSS requires you to set the path absolute.
 # Also dont put / at the end
 
 INDEX = index.html
@@ -26,9 +27,9 @@ SHELL := /bin/bash
 
 escape_quote = $(subst ',\',$(1))
 
-BLOGNAME := $(call escape_quote,$(BLOGNAME))
-BLOGDESC := $(call escape_quote,$(BLOGDESC))
-TITLESEPERATOR := $(call escape_quote,$(TITLESEPERATOR))
+BLOGNAMEESC := $(call escape_quote,$(BLOGNAME))
+BLOGDESCESC := $(call escape_quote,$(BLOGDESC))
+TITLESEPERATORESC := $(call escape_quote,$(TITLESEPERATOR))
 
 ifeq ($(POSTS),)
 $(error No blog post found under $(POSTSDIR))
@@ -52,8 +53,8 @@ $(BUILDDIR)/$(INDEX): $(POSTS) $(TEMPLATEPATH)/index.html $(TEMPLATEPATH)/post_c
 		TEMPLATE_POST_DESC=$$(envsubst < $$post | sed 's/<[^>]*>//g' | tr '\n' ' ' | cut -d' ' -f 1-100)... \
 		envsubst < "$(TEMPLATEPATH)/post_card.html" >> $(TEMPDIR)/blog_index_posts ; \
 	done
-	TEMPLATE_TITLE=$$'$(BLOGNAME)' \
-	TEMPLATE_DESC=$$'$(BLOGDESC)' \
+	TEMPLATE_TITLE=$$'$(BLOGNAMEESC)' \
+	TEMPLATE_DESC=$$'$(BLOGDESCESC)' \
 	TEMPLATE_PAGE_TITLE=$$'Latest Posts' \
 	TEMPLATE_BLOG_ROOT=$$'$(BLOGROOT)' \
 	TEMPLATE_BODY=$$(cat $(TEMPDIR)/blog_index_posts) \
@@ -69,8 +70,8 @@ $(BUILDDIR)/$(POSTSDIR)/index.html: $(POSTS) $(TEMPLATEPATH)/post_index_card.htm
 		TEMPLATE_POST_DATE=$$(stat -c '%.19w' $$post) \
 		envsubst < "$(TEMPLATEPATH)/post_index_card.html" >> $(TEMPDIR)/blog_index_all_posts ; \
 	done
-	TEMPLATE_TITLE=$$'$(BLOGNAME)' \
-	TEMPLATE_DESC=$$'$(BLOGDESC)' \
+	TEMPLATE_TITLE=$$'$(BLOGNAMEESC)' \
+	TEMPLATE_DESC=$$'$(BLOGDESCESC)' \
 	TEMPLATE_PAGE_TITLE=$$'All Posts' \
 	TEMPLATE_BLOG_ROOT=$$'$(BLOGROOT)' \
 	TEMPLATE_BODY=$$(cat $(TEMPDIR)/blog_index_all_posts) \
@@ -89,8 +90,8 @@ $(BUILDDIR)/RSS.xml: $(POSTS) $(TEMPLATEPATH)/RSS.xml $(TEMPLATEPATH)/RSS_item.x
 		TEMPLATE_POST_DESC=$$(cat $$post | sed 's/<[^>]*>//g' | tr '\n' ' ' | cut -d' ' -f 1-100)... \
 		envsubst < "$(TEMPLATEPATH)/RSS_item.xml" >> $(TEMPDIR)/blog_rss_items ; \
 	done
-	TEMPLATE_TITLE=$$'$(BLOGNAME)' \
-	TEMPLATE_DESC=$$'$(BLOGDESC)' \
+	TEMPLATE_TITLE=$$'$(BLOGNAMEESC)' \
+	TEMPLATE_DESC=$$'$(BLOGDESCESC)' \
 	TEMPLATE_BLOG_ROOT=$$'$(BLOGROOT)' \
 	TEMPLATE_RSS_ITEMS=$$(cat $(TEMPDIR)/blog_rss_items) \
 	envsubst < "$(TEMPLATEPATH)/RSS.xml" > $@
@@ -101,7 +102,7 @@ $(BUILDDIR)/$(POSTSDIR)/%.html: $(POSTSDIR)/% $(TEMPLATEPATH)/post.html
 	$(eval POSTTITLE := $(patsubst $(POSTSDIR)/%,%,$(PAGETITLE)))
 	$(eval POSTTITLE := $(call escape_quote,$(POSTTITLE)))
 
-	$(eval PAGETITLE := $(POSTTITLE)${TITLESEPERATOR}$(BLOGNAME))
+	$(eval PAGETITLE := $(POSTTITLE)${TITLESEPERATORESC}$(BLOGNAMEESC))
 	
 	TEMPLATE_TITLE=$$'$(PAGETITLE)' \
 	TEMPLATE_BLOG_ROOT=$$'$(BLOGROOT)' \
