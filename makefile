@@ -1,5 +1,5 @@
-BLOGNAME = My First Blog
-BLOGDESC = hey
+BLOGNAME = Metin's Blog
+BLOGDESC = Personal opinions, programming stuff and more.
 TEMPLATE = default
 BLOGROOT =
 # You may set blogroot your domain for non relative urls.
