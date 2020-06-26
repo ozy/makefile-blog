@@ -30,6 +30,10 @@ BLOGNAME := $(call escape_quote,$(BLOGNAME))
 BLOGDESC := $(call escape_quote,$(BLOGDESC))
 TITLESEPERATOR := $(call escape_quote,$(TITLESEPERATOR))
 
+ifeq ($(POSTS),)
+$(error No blog post found under $(POSTSDIR))
+endif
+
 .PHONY: setup blog index posts_index posts rss static_content clean
 .NOTPARALLEL: setup blog index posts_index rss static_content clean
 blog: setup index rss posts_index posts static_content
