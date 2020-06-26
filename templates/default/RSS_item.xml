@@ -1,0 +1,5 @@
+<item>
+    <title>${TEMPLATE_POST_TITLE}</title>
+    <link>${TEMPLATE_BLOG_ROOT}/${TEMPLATE_POST_URL}</link>
+    <description><![CDATA[${TEMPLATE_POST_DESC}]]></description>
+</item>

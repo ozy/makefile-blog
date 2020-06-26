@@ -1,0 +1,129 @@
+<html>
+  <head>
+    <title>${TEMPLATE_TITLE}</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <style>
+    body{
+      margin: 0;
+      background-color: #fff;
+      font-family: sans-serif;
+    }
+    .details, figcaption{
+      color: #555;
+      font-size: 10pt;
+      font-style: italic;
+    }
+    .post_card{
+      border-bottom: solid 1px #d5dCe6;
+    }
+    .mainbar{
+      max-width: 1200px;
+    }
+    .header{
+      background-color: #555;
+      color: #fff;
+      font-size: 16px;
+    }
+    .header ul{
+      overflow:hidden;
+      white-space:nowrap;
+      margin: 0;
+      padding: 0;
+    }
+    .header li{
+      display:inline-block;
+      margin-right: 20px;
+    }
+    .header li a:link{
+      color: #fff;
+      text-decoration: none;
+      padding: 0 8px;
+    }
+    .header li a:visited{
+      color: #fff;
+      text-decoration: none;
+    }
+    .header li a:hover{
+      text-decoration: none;
+      background-color: #444;
+    }
+    .header li a:active{
+      color: #aaa;
+      text-decoration: none;
+    }
+    .content{
+      font-size: 14px;
+      padding: 20px;
+    }
+    .center{
+      margin: auto;
+    }
+    figure.code{
+      padding: 10px;
+      margin: 10px;
+      background-color: #f1f1f1;
+      width: max-content;
+    }
+    code{
+      font-family: Consolas,"courier new";
+      color: #d11;
+      background-color: #f1f1f1;
+    }
+    pre{
+      margin: 0;
+    }
+    figure.media{
+      width: 33%;
+    }
+    figure{
+      box-sizing: border-box;
+    }
+    .left{
+      float: left;
+    }
+    .right{
+      float: right;
+    }
+    .fill{
+      width: 100%!important;
+    }
+    @media (max-width : 770px) {
+      figure{
+        width: 100%!important;
+        margin: 0!important;
+        float: none;
+      }
+      figure.code{
+        overflow: scroll;
+      }
+      .header{
+        padding: 0 5px;
+      }
+      .mainbar{
+        width: 100%;
+        box-sizing: border-box;
+      }
+    }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="mainbar center">
+        <ul>
+          <li><a href="${TEMPLATE_BLOG_ROOT}/">Index Page</a></li>
+          <li><a href="${TEMPLATE_BLOG_ROOT}/posts/">Posts</a></li>
+          <li><a href="${TEMPLATE_BLOG_ROOT}/RSS.xml">RSS</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="content">
+      <div class="mainbar center">
+        <h1>${TEMPLATE_POST_TITLE}</h1>
+        <p class="details">last updated ${TEMPLATE_POST_DATE_UPDATED} by ${TEMPLATE_POST_AUTHOR}</p>
+        <div style="font-size: 17px;">
+          ${TEMPLATE_BODY}
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="0.91">
+    <channel>
+        <language>en</language>
+        <title>${TEMPLATE_TITLE}</title>
+        <link>${TEMPLATE_BLOG_ROOT}/</link>
+        <description>${TEMPLATE_DESC}</description>
+        ${TEMPLATE_RSS_ITEMS}
+    </channel>
+</rss>
