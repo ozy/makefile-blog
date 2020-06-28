@@ -37,6 +37,7 @@ endif
 
 .PHONY: setup blog index posts_index posts rss static_content clean
 .NOTPARALLEL: setup blog index posts_index rss static_content clean
+.SILENT: static_content
 blog: setup index rss posts_index posts static_content
 
 # INDEX PAGE
@@ -123,8 +124,8 @@ posts: $(HTMLPOSTS)
 rss: $(BUILDDIR)/RSS.xml
 
 static_content:
-	cp -ar $(POSTSDIR)/$(STATICDIR)/* $(BUILDDIR)/$(STATICDIR)/
-	cp $(TEMPLATEPATH)/*.css $(BUILDDIR)/$(STATICDIR)/ | true
+	cp -ar $(POSTSDIR)/$(STATICDIR)/* $(BUILDDIR)/$(STATICDIR)/ 2> /dev/null || echo $$'Info: No static file under $(STATICDIR)'
+	cp $(TEMPLATEPATH)/*.css $(BUILDDIR)/$(STATICDIR)/ 2> /dev/null || echo $$'Info: No css file under $(TEMPLATEPATH)'
 
 setup:
 	mkdir -p $(BUILDDIR)/$(POSTSDIR)/
