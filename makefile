@@ -62,7 +62,7 @@ $(BUILDDIR)/$(INDEX): $(POSTS) $(TEMPLATEPATH)/index.html $(TEMPLATEPATH)/post_c
 	envsubst < "$(TEMPLATEPATH)/index.html" > $@
 
 # POSTS INDEX
-$(BUILDDIR)/$(POSTSDIR)/index.html: $(POSTS) $(TEMPLATEPATH)/post_index_card.html
+$(BUILDDIR)/$(POSTSDIR)/index.html: $(POSTS) $(TEMPLATEPATH)/post.html $(TEMPLATEPATH)/post_index_card.html
 	rm -f $(TEMPDIR)/blog_index_all_posts
 	for post in $$(ls -t $(POSTS)); do \
 		TEMPLATE_POST_TITLE=$$(basename $$post | sed 's/_/ /g') \
