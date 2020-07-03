@@ -173,7 +173,6 @@ setup:
 	mkdir -p $(BUILDDIR)/$(POSTSDIR)/
 	mkdir -p $(BUILDDIR)/$(PAGESDIR)/
 	mkdir -p $(BUILDDIR)/$(STATICDIR)/css
-	rm -f $(TEMPDIR)/blog_menu_items
 
 clean:
 	rm -rf $(BUILDDIR)

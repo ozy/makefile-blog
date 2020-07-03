@@ -35,7 +35,7 @@ BLOGROOT =
 # Also dont put / at the end
 ```
 Any time you change the makefile itself or the configuration through variables, you may need to run ```make clean``` before you make again because makefile itself 
-isn't watched for modifications.
+and the environment variables aren't watched for modifications.
 
 ### Templating
 
