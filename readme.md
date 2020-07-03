@@ -17,7 +17,7 @@ Makefile-Blog requires following packages for generating static files:
 Running Makefile-Blog first requires you to create posts directory. After creating the posts directory, anything you put under it without an extension is a blog file. Spaces are not used, instead underscores are used which are later replaced.
 
 ```sh
-$ mkdir posts
+$ make setup
 $ echo 'Hello World' > posts/My_First_Post
 $ make
 ```
