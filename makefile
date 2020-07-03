@@ -43,7 +43,7 @@ blog: setup index rss posts_index posts static_content
 # INDEX PAGE
 $(BUILDDIR)/$(INDEX): $(POSTS) $(TEMPLATEPATH)/index.html $(TEMPLATEPATH)/post_card.html
 	rm -f $(TEMPDIR)/blog_index_posts
-	for post in $$(ls -t $(POSTS) | tr '\n' ' ' | cut -d' ' -f 1-$(NUMINDEXPOSTS)); do \
+	for post in $$(ls -t '' $(POSTS) | tr '\n' ' ' | cut -d' ' -f 1-$(NUMINDEXPOSTS)); do \
 		TEMPLATE_POST_TITLE=$$(basename $$post | sed 's/_/ /g') \
 		TEMPLATE_BLOG_ROOT=$$'$(BLOGROOT)' \
 		TEMPLATE_POST_URL=$$(echo $$post).html \
@@ -64,7 +64,7 @@ $(BUILDDIR)/$(INDEX): $(POSTS) $(TEMPLATEPATH)/index.html $(TEMPLATEPATH)/post_c
 # POSTS INDEX
 $(BUILDDIR)/$(POSTSDIR)/index.html: $(POSTS) $(TEMPLATEPATH)/post.html $(TEMPLATEPATH)/post_index_card.html
 	rm -f $(TEMPDIR)/blog_index_all_posts
-	for post in $$(ls -t $(POSTS)); do \
+	for post in $$(ls -t '' $(POSTS)); do \
 		TEMPLATE_POST_TITLE=$$(basename $$post | sed 's/_/ /g') \
 		TEMPLATE_BLOG_ROOT=$$'$(BLOGROOT)' \
 		TEMPLATE_POST_URL=$$(echo $$post).html \
@@ -81,7 +81,7 @@ $(BUILDDIR)/$(POSTSDIR)/index.html: $(POSTS) $(TEMPLATEPATH)/post.html $(TEMPLAT
 # RSS
 $(BUILDDIR)/RSS.xml: $(POSTS) $(TEMPLATEPATH)/RSS.xml $(TEMPLATEPATH)/RSS_item.xml
 	rm -f $(TEMPDIR)/blog_rss_items
-	for post in $$(ls -t $(POSTS) | tr '\n' ' ' | cut -d' ' -f 1-$(NUMINDEXPOSTS)); do \
+	for post in $$(ls -t '' $(POSTS) | tr '\n' ' ' | cut -d' ' -f 1-$(NUMINDEXPOSTS)); do \
 		TEMPLATE_POST_TITLE=$$(basename $$post | sed 's/_/ /g') \
 		TEMPLATE_BLOG_ROOT=$$'$(BLOGROOT)' \
 		TEMPLATE_POST_URL=$$(echo $$post).html \
