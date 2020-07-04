@@ -21,10 +21,15 @@ TEMPLATESDIR = templates
 
 TEMPLATEPATH := $(TEMPLATESDIR)/$(TEMPLATE)
 
-POSTS := $(shell find $(POSTSDIR) -type f ! -path "$(POSTSDIR)/$(STATICDIR)/*")
-PAGES := $(shell find $(PAGESDIR) -type f ! -path "$(PAGESDIR)/$(STATICDIR)/*")
+POSTS := $(shell find $(POSTSDIR) -type f ! -path "$(POSTSDIR)/$(STATICDIR)/*" 2> /dev/null)
+PAGES := $(shell find $(PAGESDIR) -type f ! -path "$(PAGESDIR)/$(STATICDIR)/*" 2> /dev/null)
 HTMLPOSTS := $(patsubst $(POSTSDIR)/%,$(BUILDDIR)/$(POSTSDIR)/%.html,$(POSTS))
 HTMLPAGES := $(patsubst $(PAGESDIR)/%,$(BUILDDIR)/$(PAGESDIR)/%.html,$(PAGES))
+
+.PHONY: setup blog precheck index posts_index posts pages rss static_content clean
+.NOTPARALLEL: setup precheck blog index posts_index rss static_content clean
+.SILENT: static_content
+blog: precheck index rss posts_index posts pages static_content
 
 SHELL := /bin/bash
 
@@ -33,15 +38,6 @@ escape_quote = $(subst ',\',$(1))
 BLOGNAMEESC := $(call escape_quote,$(BLOGNAME))
 BLOGDESCESC := $(call escape_quote,$(BLOGDESC))
 TITLESEPERATORESC := $(call escape_quote,$(TITLESEPERATOR))
-
-ifeq ($(POSTS),)
-$(error No blog post found under $(POSTSDIR))
-endif
-
-.PHONY: setup blog index posts_index posts pages rss static_content clean
-.NOTPARALLEL: setup blog index posts_index rss static_content clean
-.SILENT: static_content
-blog: setup index rss posts_index posts pages static_content
 
 # INDEX PAGE
 $(BUILDDIR)/$(INDEX): $(POSTS) $(TEMPLATEPATH)/index.html $(TEMPLATEPATH)/post_card.html $(TEMPDIR)/blog_menu_items
@@ -170,6 +166,11 @@ static_content:
 setup:
 	mkdir -p $(POSTSDIR)
 	mkdir -p $(PAGESDIR)
+
+precheck:
+ifeq ($(POSTS),)
+	$(error No blog post found under $(POSTSDIR))
+endif
 	mkdir -p $(BUILDDIR)/$(POSTSDIR)/
 	mkdir -p $(BUILDDIR)/$(PAGESDIR)/
 	mkdir -p $(BUILDDIR)/$(STATICDIR)/css
