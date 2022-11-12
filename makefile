@@ -1,7 +1,7 @@
-BLOGNAME = My First Blog
-BLOGDESC = hey
+BLOGNAME = Metin's Blog
+BLOGDESC = Personal opinions and experiments about programming.
 TEMPLATE = default
-BLOGROOT =
+BLOGROOT = https://metin.nextc.org
 # You may set blogroot your domain for non relative urls.
 # RSS requires you to set the path absolute.
 # Also dont put / at the end
