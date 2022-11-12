@@ -1,0 +1,198 @@
+<figure class="media right">
+    <img class="fill" src="${TEMPLATE_STATIC_PATH}/3/figure.png" alt="image showing github search results">
+    <figcaption>1.6M Repository Results About Hello World.</figcaption>
+</figure>
+
+For most, &quot;Hello World&quot; has been the prominent choice of test phrase when beginning journey of learning a new programming language. 
+It&apos;s widely used in examples and tutorials. Making a quick search in the Github reveals over 1.6M results so there&apos;s no doubt of its widespread use. 
+Java was the second most used language - after HTML - in the search. 
+
+<h2>Writing The Program</h2>
+Software written in Java is usually compiled into Java Bytecode which are then executed in the Java Virtual Machine.
+Let&apos;s write the Hello World example. First, create a file named &quot;HelloWorld.java&quot; and write the content below. 
+
+<figure class="code">
+<pre>
+class HelloWorld {
+    public static void main(String[] args) {
+        System.out.println("Hello, World!");
+    }
+}
+</pre>
+<figcaption>Hello World Example</figcaption>
+</figure>
+
+Javac is the software used for converting source code conforming to Java Language Specification into JVM compatible bytecode.
+Executing the below statement generates a file named &quot;HelloWorld.class&quot;. 
+
+<figure class="code">
+<pre>
+$ javac HelloWorld.java
+</pre>
+</figure>
+
+<h2>The .class File Format</h2>
+A Java class file contains the actual bytecodes for a class, constant pool,
+access flags, version metadata, superclass & interface id (actual superclass and interface names are stored in the constant pool) and various attributes. 
+To see more about what a class file contains, you can see more about the class file format at 
+<a href="https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html">https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html</a>
+
+<br><br>
+
+A class file is identified by its first 4 bytes, printing it shows following out:
+
+<br><br>
+
+<figure class="code">
+<pre>
+$ xxd -l 4 HelloWorld.class
+00000000: cafe babe                                ....
+</pre>
+</figure>
+
+0xCAFEBABE is the magic number that JVM uses to identify class files. Lets disassemble the class file we generated to see more.
+
+
+<h2>Disassembling</h2>
+
+When a Java Virtual Machine starts up, it first looks for a main function in the specified class.
+<br><br>
+
+The main class is usually defined as <code>public static void main(String[] args)</code> in Java Language. 
+In JVM, that method is searched within the class file with a method name of &quot;main&quot; and a method descriptor of <code>([Ljava/lang/String;)V</code>, 
+which basically means a method that takes an array of String class instances as parameter and returns void.
+
+<br><br>
+
+Details about descriptors can be found at: <a href="https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.3.2">https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-4.html#jvms-4.3.2</a>
+
+<br><br>
+
+We can disassemble a class file with the <code>javap</code> tool:
+
+
+<figure class="code">
+<pre>
+$ javap -c HelloWorld
+Compiled from "HelloWorld.java"
+class HelloWorld {
+  HelloWorld();
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."&lt;init&gt;":()V
+       4: return
+public static void main(java.lang.String[]);
+    Code:
+       0: getstatic     #2                  // Field java/lang/System.out:Ljava/io/PrintStream;
+       3: ldc           #3                  // String Hello, World!
+       5: invokevirtual #4                  // Method java/io/PrintStream.println:(Ljava/lang/String;)V
+       8: return
+}
+</pre>
+</figure>
+
+Decompiled output shows us that there are two methods in our class file. First one is the constructor, aka &lt;init&gt; function in JVM&apos;s notations; 
+the other one is the entry point of our program, our main method. Even though we haven&apos;t added a constructor, 
+the compiler added a basic constructor invoking the superclass&apos;s constructor. In our case, HelloWorld class doesn&apos;t have 
+an explicit superclass but every class in java is ultimately derived from the Object 
+class so &lt;init&gt; function of Object is invoked.
+
+<br><br>
+
+Since main method is a static method, the constructor of our class is not invoked during execution of our HelloWorld program.
+
+<h2>Interpreting The Bytecodes</h2>
+The bytecodes are obviously doing something that prints the &quot;Hello World&quot;. Lets follow them in the light of 
+<a href="https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-6.html">JVM Instruction Set Specs</a>.
+<br><br>
+<pre>0: getstatic #2 // Field java/lang/System.out:Ljava/io/PrintStream;</pre>
+<code>getstatic</code> instruction pushes the value of a static field into the operand stack after initializing its class through &lt;clinit&gt; method if not initialized already.
+<br>
+Next two bytes after this instruction is built into an index used for fetching the field name from the Constant Pool. In our case, the static field is the &quot;System.out&quot;.
+<br><br>
+<pre>3: ldc #3 // String Hello, World!</pre>
+<code>ldc</code> is the instruction for loading an item from the constant pool and pushing it into the operand stack. 
+In our case, the constant pool entry is a String literal, so a reference to a String &quot;Hello, World!&quot; is pushed into the stack.
+<br>
+Detailed information about the constant pool can be found at <a href="https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-5.html#jvms-5.1">here</a>:
+<br><br>
+<pre>5: invokevirtual #4 // Method java/io/PrintStream.println:(Ljava/lang/String;)V</pre>
+<code>invokevirtual</code> invokes the instance method fetched from constant pool with arguments from the operand stack. 
+The println method we called, takes 1 argument. Since this is an instance method, we need an instance object reference 
+which is also at the operand stack as we previously pushed with getstatic.
+<br>
+After popping 2 values from the operand stack, we can run the println method.
+<br><br>
+Tracing the java.io library, the println method eventually calls a function called <code>FileOutputStream.writeBytes</code> that is defined as a private native void. 
+So there&apos;s no implementation for it in java.
+
+<h2>Java Native Interface & System Calls</h2>
+
+JVM is isolated from the underlying system by design. So any action requiring access to the underlying system is done by native methods via JNI. In our case, we need to print stuff to the console which is done by writing into the
+file descriptor 1 as stated in the POSIX and the <code>java.io.FileDescriptor#out</code>.
+
+<br><br>
+
+Even a simple program in java requires many native methods to be registered and linked. For example, running our Hello World example with below command shows some relevant native methods for printing the text.
+
+<figure class="code">
+<pre>
+Some output is omitted for convenience.
+$ java -verbose:jni HelloWorld
+…
+[Dynamic-linking native method java.io.FileOutputStream.writeBytes … JNI]
+Hello, World!
+</pre>
+</figure>
+
+We traced to the writeBytes method and found that its defined as a native void. 
+Tracing further shows us implementation of the <code>FileOutputStream.writeBytes</code> can be 
+found at <a href="https://github.com/openjdk/jdk/blob/master/src/java.base/share/native/libjava/FileOutputStream.c">JDK sources</a>.
+
+<figure class="code">
+<pre>
+JNIEXPORT void JNICALL
+Java_java_io_FileOutputStream_writeBytes(JNIEnv *env,
+    jobject this, jbyteArray bytes, jint off, jint len, jboolean append) {
+    writeBytes(env, this, bytes, off, len, append, fos_fd);
+}
+</pre>
+<figcaption>Native method writeBytes</figcaption>
+</figure>
+
+User level programs usually communicate with the kernel through system calls. In our case, the system call for writing data into a file descriptor is &quot;<a href="https://en.wikipedia.org/wiki/Write_(system_call)">Write</a>&quot;. 
+The writeBytes method is a wrapper for write function which is also a wrapper for the write system call.
+
+<br><br>
+
+To prove our point and path we reached, we can use <code>strace</code> to dump all system calls JVM and its forks does during execution.
+
+<figure class="code">
+<pre>
+Some output is omitted for convenience.
+# strace -f java HelloWorld
+...
+...
+[pid 29907] write(1, "Hello, World!", 13) = 13
+[pid 29907] write(1, "\n", 1)   
+</pre>
+</figure>
+
+
+A write system call writing into the STDOUT (fd 1 as per POSIX) can be seen. Detailed information about the write system call and it&apos;s wrapper can be found at <a href="https://man7.org/linux/man-pages/man2/write.2.html">the man file</a>.
+
+<h2>Conclusion</h2>
+Even though JVM instruction set has a wide range of instructions, any action requires communicating with the kernel or underlying host requires native code to be executed through the Java Native Interface.
+<br><br>
+Digging into a simple Hello World program can give us hints about how JVM works and communicates out of it&apos;s isolated space.
+<br><br><i>Discussion is encouraged.</i>
+
+<h2>References</h2>
+<a href="https://docs.oracle.com/javase/specs/jvms/se8/html/index.html">JVM Specifications</a><br>
+<a href="https://docs.oracle.com/javase/specs/jls/se8/html/index.html">Java Language Specifications</a><br>
+<a href="https://github.com/openjdk/jdk">JDK Source</a><br>
+<a href="https://en.wikipedia.org/wiki/Write_(system_call)">Wikipedia Write SysCall</a><br>
+<a href="https://man7.org/linux/man-pages/man2/write.2.html">Write Syscall Man Page</a><br>
+
+<br><br>
+<i>Originally written for <a href="https://medium.com/sahibinden-technology/deep-dive-into-hello-world-in-java-d05d60332984">Sahibinden Technology</a></i>

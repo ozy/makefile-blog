@@ -1,0 +1,155 @@
+<p>Some Linux kernel versions had a bug in their ip fragmentation module which caused system crash during handling of a malformed ip fragment back in 1997.</p>
+
+<h2>What's an Ip Fragment</h2>
+<p>
+The "Internet Protocol" allows packets larger than the maximum transmission unit to be sent as smaller fragments. If an internet packet is fragmented; it uses 
+"More Fragments" flag to indicate further coming fragments, "Fragment Offset" field to indicate fragments position and "IP Identifier" field to group fragments.
+</p>
+<p>The procedure for handling this in Linux kernel 2.1 is fairly simple. When the ip stack encounters with a packet with "More Fragments" flag, it keeps the packet in a hashmap 
+until all fragments are received. Later, the ip stack tries to order packets since packets can arrive without order. After ordering, fragments are glued by their offset into 
+a single packet for the further steps.
+</p>
+<figure class="code right">
+    <table border="0" cellspacing="0"><colgroup span="2" width="135"></colgroup> <colgroup width="29"></colgroup> <colgroup span="2" width="106"></colgroup> <colgroup width="29"></colgroup>
+    <tbody>
+    <tr>
+    <td style="border: 1px solid #000000;" colspan="2" align="center" valign="middle" height="53">IP Fragment</td>
+    <td style="border: 1px solid #000000;" colspan="4" align="center" valign="middle">IP Fragment</td>
+    </tr>
+    <tr>
+    <td colspan="2" align="left" valign="top" height="20">0</td>
+    <td align="left" valign="top">128</td>
+    <td colspan="2" align="left">&nbsp;</td>
+    <td align="right" valign="top">256</td>
+    </tr>
+    </tbody>
+    </table>
+    <figcaption>A normal fragmented ip packet.</figcaption>
+</figure>
+<p>
+An example fragmented ip packet ready to glue is seen on the figure. The first fragment starts at offset 0 and finishes at offset 128 which the following fragment starts at. If there were a space 
+caused by a lost fragment, then the kernel would wait for packet around 30 seconds before discarding all related fragments. But assuming the second fragment has its "More Fragments" flag unset, 
+this fragment is ready for gluing into a single packet.
+</p>
+<h2>Packet Overlapping</h2>
+<p>
+So now, we know what happens if we make a gap between fragments. But what if we reduce the offset of the second fragment so it overlaps with the first one? 
+<a href="https://tools.ietf.org/html/rfc791#page-28">RFC791</a>, the Internet Protocol describes an example defragmentation algorithm that allows overlapping so a newer fragment can 
+overwrite previous fragments which linux just skipped overwriting part. So nothing spectacular happens on linux.
+</p>
+<figure class="code right">
+    <table border="0" cellspacing="0"><colgroup width="135"></colgroup> <colgroup span="2" width="67"></colgroup> <colgroup width="27"></colgroup>
+        <tbody>
+        <tr style="height: 54px;">
+        <td style="border: 1px solid #000000; height: 54px;" colspan="3" align="center" valign="middle">IP Fragment</td>
+        <td style="height: 54px;" align="left">&nbsp;</td>
+        </tr>
+        <tr style="height: 2px;">
+        <td style="height: 2px;" align="left">&nbsp;</td>
+        <td style="height: 2px;" align="left">&nbsp;</td>
+        <td style="border-right: 1px solid #000000; height: 2px;" align="left">&nbsp;</td>
+        <td style="height: 2px;" align="left">&nbsp;</td>
+        </tr>
+        <tr style="height: 55px;">
+        <td style="height: 55px;" align="left">&nbsp;</td>
+        <td style="border: 1px solid #000000; height: 55px;" align="center" valign="middle"><span style="font-size: xx-small;">IP Fragment</span></td>
+        <td style="border-right: 1px solid #000000; height: 55px;" align="left">&nbsp;</td>
+        <td style="height: 55px;" align="center" valign="middle">&nbsp;</td>
+        </tr>
+        <tr style="height: 18px;">
+        <td style="height: 18px;" align="left" valign="top">0</td>
+        <td style="height: 18px;" align="left">64</td>
+        <td style="border-left: 1px solid #000000; border-right: 1px solid #000000; height: 18px;" align="left">96</td>
+        <td style="height: 18px;" align="left" valign="top">128</td>
+        </tr>
+        <tr style="height: 18px;">
+        <td style="height: 18px;" align="left">&nbsp;</td>
+        <td style="height: 18px;" align="left">&nbsp;</td>
+        <td style="border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; height: 18px;" align="left">&nbsp;</td>
+        <td style="height: 18px;" align="left">&nbsp;</td>
+        </tr>
+        <tr style="height: 18px;">
+        <td style="height: 18px;" align="left">&nbsp;</td>
+        <td style="height: 18px;" align="left">&nbsp;</td>
+        <td style="height: 18px;" align="center">len</td>
+        <td style="height: 18px;" align="left">&nbsp;</td>
+        </tr>
+        </tbody>
+    </table>
+    <figcaption>A packet inside another packet</figcaption>
+</figure>
+
+<p>Problems start to arise when we <i>"set the fragment offset to be inside of the previous packet's payload (it overlaps inside the previous packet) but do not include 
+enough payload to cover complete the datagram".</i><sup>[quoted from teardrop.c inline comments]</sup></p>
+<h2>The Bug</h2>
+<p>As you might start to guess, the linux kernel calculated the length of a fragment by substracting the end of the first fragment from end of the second fragment so it skips the overwriting 
+previous fragment and writes only the non-overlapping part - what's new from a fragment. This length calculation led to calculation of negative sizes for the fragments that overlap but 
+finish earlier than the previous fragment.
+</p>
+<figure class="code center">
+<pre>kernel2.1.62:ip_fragment.c@114
+/* Fill in the structure. */
+fp->offset = offset;
+fp->end = end;
+fp->len = end - offset;</pre>
+<figcaption>In this context; the "end" variable is the end of the second packet, "offset" is the end of the first packet.</figcaption>
+</figure>
+
+<p>Let the length be calculated as negative, the gluing part which uses the length requires an unsigned type which a small negative value represented as a very high number. What gluing does? Let's see:</p>
+
+<figure class="code center">
+<pre>kernel2.1.62:ip_fragment.c@339
+/* Copy the data portions of all fragments into the new buffer. */
+fp = qp->fragments;
+while(fp) {
+    if(count+fp->len > skb->len) {
+        NETDEBUG(printk(KERN_ERR "Invalid fragment list: "
+                "Fragment over size.\n"));
+        ip_free(qp);
+        kfree_skb(skb,FREE_WRITE);
+        ip_statistics.IpReasmFails++;
+        return NULL;
+    }
+    memcpy((ptr + fp->offset), fp->ptr, fp->len);
+    if (!count) {
+        skb->dst = dst_clone(fp->skb->dst);
+        skb->dev = fp->skb->dev;
+    }
+    count += fp->len;
+    fp = fp->next;
+}</pre>
+<figcaption>The part in ip_glue function that actually glues fragments into a new buffer.</figcaption>
+</figure>
+<p>The <code>memcpy</code> part evaluates the len as a very big number and starts to write huge amounts of data into the offsetted address. A hotfix released for this in version 2.1.63, 
+checking if the len variable is greater than zero before passing it to <code>memcpy</code>.</p>
+<h3>The Fix</h3>
+<figure class="code center">
+<pre>kernel2.1.63:ip_fragment.c@340
+	/* Copy the data portions of all fragments into the new buffer. */
+	fp = qp->fragments;
+	while(fp) {
+		if (fp->len < 0 || count+fp->len > skb->len) {
+</pre>
+<figcaption>The hotfix dropped fragments with negative len.</figcaption>
+</figure>
+<h3>The Comeback</h3>
+<p>The story doesn't end here. The hotfix checked for a negative value but what about a packet with a length 0? Almost two years later, in march 1999, the check for zero length packets added as following:</p>
+<figure class="code center">
+<pre>kernel2.2.6:ip_fragment.c@361
+	/* Copy the data portions of all fragments into the new buffer. */
+	fp = qp->fragments;
+	count = qp->ihlen;
+	while(fp) {
+		if ((fp->len <= 0) || ((count + fp->len) > skb->len))
+</pre>
+<figcaption>It's now dropping negative and zero length fragments.</figcaption>
+</figure>
+<p>A set of similar ip fragmentation vulnerabilities including these ones called "Teardrop Attack" and was used for a while to crash computers and cause denial of service.</p>
+
+<i>References:</i>
+<ul>
+    <li><a href="https://twitter.com/engur/">@engur</a></li>
+    <li><a href="https://tools.ietf.org/html/rfc791">RFC 791 - Internet Protocol</a></li>
+    <li><a href="https://tools.ietf.org/html/rfc1858">RFC 1858 - Security Considerations for IP Fragment Filtering</a></li>
+    <li><a href="https://mirrors.edge.kernel.org/pub/linux/kernel/">Kernel Source Code</a></li>
+</ul>

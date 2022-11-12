@@ -77,6 +77,7 @@
           <li><a href="${TEMPLATE_BLOG_ROOT}/">Index Page</a></li>
           <li><a href="${TEMPLATE_BLOG_ROOT}/posts/">Posts</a></li>
           <li><a rel="alternate" type="application/rss+xml" href="${TEMPLATE_BLOG_ROOT}/RSS.xml">RSS</a></li>
+          <li><a href="https://twitter.com/mozyild">Twitter</a></li>
           ${TEMPLATE_EXTRA_MENU_ITEMS}
         </ul>
       </div>
@@ -88,5 +89,20 @@
         <a href="${TEMPLATE_BLOG_ROOT}/posts/">See All Posts</a>        
       </div>
     </div>
+    <!-- Matomo -->
+    <script type="text/javascript">
+    var _paq = window._paq = window._paq || [];
+    /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+    _paq.push(['trackPageView']);
+    _paq.push(['enableLinkTracking']);
+    (function() {
+        var u="//metin.nextc.org/analytics-matomo/";
+        _paq.push(['setTrackerUrl', u+'matomo.php']);
+        _paq.push(['setSiteId', '1']);
+        var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+        g.type='text/javascript'; g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+    })();
+    </script>
+    <!-- End Matomo Code -->
   </body>
 </html>

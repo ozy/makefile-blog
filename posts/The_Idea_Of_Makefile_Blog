@@ -1,0 +1,101 @@
+<figure class="media right">
+    <img class="fill" src="${TEMPLATE_STATIC_PATH}/1/meme.jpg">
+    <figcaption>The meme about this post, <a href="https://twitter.com/vincentdnl">by @vincentdnl</a>.</figcaption>
+</figure>
+Nowadays, even the simplest static website generator are overly complicated and requires too much effort to learn and customize.
+A possible solution to this problem was use of easily accessible tools -if not already shipped with distro- with the power of 
+<code>GNU Make</code>. First think I did was searching similar implementations with a makefile but I had no luck except for some generators 
+which basicly call a script already written in a high level language and it lacked the extensibility theme wise. 
+<h2>Structure</h2>
+The basic structure involving in the Makefile Blog is templating through <code>envsubst</code> included in <code>gettext</code> package. 
+Various information including author, creation time and update time is read by <code>stat</code> from filesystem metadata which might not work 
+on some filesystems or configurations but tested on ext4 and ntfs. The posts are written in html and should be saved under posts directory 
+with no extension. The rationale behind the choice of html over markdown is because html is native language of the web and use of anything else is 
+just waste of computation in my opinion since it requires additional dependency to a md to html converter such as <code>pandoc</code>.
+Static files are stationed under <code>posts/static</code> folder and recursively copied to build/static folder among with any css file under current 
+template folder. So inner structure of static files are not defined but preffered use can be seen in the folder tree.
+<br>
+<br>
+
+<figure class="code left">
+<pre><code style="color:black">.
+|-- makefile
+|-- <span style="color:#5454ff;"><b>posts</b></span>
+|   |-- Hello_World
+|   |-- Second_Post
+|   |-- The_Idea_Of_Makefile_Blog
+|   `-- <span style="color:#5454ff;"><b>static</b></span>
+|       `-- <span style="color:#5454ff;"><b>1</b></span>
+|           `-- <span style="color:#ff54ff;"><b>meme.jpg</b></span>
+`-- <span style="color:#5454ff;"><b>templates</b></span>
+    `-- <span style="color:#5454ff;"><b>default</b></span>
+        |-- RSS.xml
+        |-- RSS_item.xml
+        |-- index.html
+        |-- page.html
+        |-- post.html
+        |-- post_card.html
+        `-- post_index_card.html
+
+5 directories, 12 files</code></pre>
+<figcaption>The folder tree before build.</figcaption>
+</figure>
+
+As seen on the folder tree, name of the post files are also title for the blog posts but underscores which then gets replaced used instead of spaces. The way 
+<code>Make</code> interprets spaces is interesting and usually breaks stuff.
+
+<h2>Configuration</h2>
+Configuring the makefile blog is easy. Variables in the makefile can be either manually modified or given through environment. Some fields you may want to 
+change as following:
+<figure class="code">
+<pre>
+BLOGNAME = My First Blog
+BLOGDESC = hey
+TEMPLATE = default
+BLOGROOT = 
+# You may set blogroot your domain for non relative urls.
+# Also dont put / at the end
+</pre>
+</figure>
+The blogroot can be blank if the blog is on the root of the domain. If you have placed your blog under a directory named <code>blog</code>, you may set 
+<code>BLOGROOT</code> variable to <code>/blog</code>. If you need absolute urls for some reason, you may set <code>BLOGROOT</code> variable to your domain such as 
+<code>https://www.example.com</code>. Further configuration available in the makefile
+<br>
+
+<h2>Templating</h2>
+Any template under templates directory can be choosen by editing the makefile or by giving the related environment variable as <code>make TEMPLATE=tmpname</code>. 
+The default template is an example to show minimum set of files required for a template. Every template must have these files to satisfy requirements for all 
+targets available in the makefile. The template files use environment variables set by makefile during the building process similar to <code>&#36;{TEMPLATE_POST_DATE_UPDATED}</code> 
+or <code>&#36;{TEMPLATE_POST_AUTHOR}</code> to show content.
+
+<h2>Result</h2>
+The makefile blog is as simple as creating a text file mixed with html tags under <code>./posts</code> and running <code>make</code>.
+I have tested the default template on various browsers including the <code>links</code>. 
+The default template is mostly usable in links and no major problem is visible. Since this is a minimal template, 
+no external css file were used. The template is more or less compatible with mobile devices as far as my 
+non-extensive tests. Overall compatibility is okay across devices.
+<br>
+<br>
+P.S: The project can be found at <a href="https://github.com/ozy/makefile-blog">Github</a>, this blog itself is made with makefile blog.
+<figure class="code fill" style="font-size:11px; text-align: center;">
+<pre>    The Idea Of Makefile Blog | Deneme Blog (p1 of 5) 
+    * Index Page                                                    
+    * Posts                                                         
+    * RSS                                                           
+                                                                    
+                     The Idea Of Makefile Blog                      
+                                                                    
+  last updated 2020-06-24 21:02:12 by met                           
+                                                                    
+  The meme about this post. Nowadays, even the simplest static       
+  website generator are overly complicated and requires too much    
+  effort to learn and customize. A possible solution to this        
+  problem was use of easily accessible -if not already shipped      
+  with distro- tools with the power of GNU Make. First think I      
+  did was searching similar implementations with a makefile but I   
+  had no luck except for some generators which basicly call a       
+  script already written in a high level language and it lacked     
+  the extensibility theme wise.                                     
+file:///home/met/Desktop/blog/build/                                </pre>
+<figcaption>Result on the links browser with default theme.</figcaption>
+</figure>
