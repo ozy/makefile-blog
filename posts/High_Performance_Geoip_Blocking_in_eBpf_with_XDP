@@ -10,7 +10,7 @@
 <p>The GeoIP data contains IP address prefixes mapped to a country code such as:</p>
 <pre>123.123.123.0/24   -&gt; US
 123.123.123.123/32 -&gt; DE</pre>
-<p>So we need to find the most specific entry for an IP address. It’s called LPM search and luckily there’s a type of map supported for it. “BPF_MAP_TYPE_LPM_TRIE”.</p>
+<p>So we need to find the most specific entry for an IP address. It’s called LPM search and luckily there’s a type of map supported for it in the eBpf space, <code>BPF_MAP_TYPE_LPM_TRIE</code>.</p>
 <p>We converted the country code into a bit id by mapping country codes to a sequential id and put that id into map.</p>
 <p>So what we have in the eBpf map now:</p>
 <pre>123.123.123.0/24   -&gt; 0
