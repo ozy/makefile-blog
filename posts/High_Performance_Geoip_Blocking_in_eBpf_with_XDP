@@ -1,0 +1,57 @@
+<p>XDP stands for eXpress Data Path and provides a framework for BPF that enables high-performance programmable packet processing in the Linux kernel. It runs the BPF program at the earliest possible point in software, namely at the moment the network driver receives the packet. <a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
+<p>According to customer needs, we need to drop or pass packets for a list of source countries. This necessity varies by customer, but some use cases include DNS infrastructures having a specific point of presence.</p>
+<p>So it needs to be highly configurable in terms of source countries and type of the list as block or allow while maintaining performance.</p>
+<h2 id="high-level-design">High Level Design:</h2>
+<p>First of all we need to determine the source country of an arriving packet. This is often done by using a so called Geoip Database, which includes IP address prefixes and their source of origin country. There are multiple third parties offering this database, and some are even available free of charge.</p>
+<p>So we have IP address prefixes and their corresponding countries. We need a way to use these in the eBPF space. Luckily, we have eBpf maps to store data.</p>
+<p>Finally, we need this procedure to efficiently process millions of packets per second. Keeping a real list and doing multiple comparisons per packet is computationally expensive. So our solution to this was to keep a bitmap wide enough to have a bit for each country and do a bitmap check per packet.</p>
+<h2 id="user-space-populating-the-geoip-data-into-ebpf-map">User space populating the GeoIP data into Ebpf map</h2>
+<p>Ebpf maps are quite handy and it can be populated in the user space and easily read at the ebpf space. So after parsing the geoip database we need to populate it into the eBpf map.</p>
+<p>The GeoIP data contains IP address prefixes mapped to a country code such as:</p>
+<pre>123.123.123.0/24   -&gt; US
+123.123.123.123/32 -&gt; DE</pre>
+<p>So we need to find the most specific entry for an IP address. It’s called LPM search and luckily there’s a type of map supported for it. “BPF_MAP_TYPE_LPM_TRIE”.</p>
+<p>We converted the country code into a bit id by mapping country codes to a sequential id and put that id into map.</p>
+<p>So what we have in the eBpf map now:</p>
+<pre>123.123.123.0/24   -&gt; 0
+123.123.123.123/32 -&gt; 1</pre>
+<h2 id="storing-the-user-policy-for-geoip-block-checking-packets-for-geoip-match">Storing the user policy for GeoIP block &amp; Checking Packets For Geoip Match</h2>
+<p>So as said earlier, we keep the policy for which countries to block or allow in a bitmap. Every country is represented by a bit, consider we blocked Germany; the bitmap for policy is as such:</p>
+<pre>countries  :  US  DE  XX  XX  XX  XX  XX  XX
+bitmap nth :  0   1   2   3   4   5   6   7
+value      :  0   1   0   0   0   0   0   0</pre>
+<p>At this point, checking packets for geoip matching is pretty easy. Get the bitmap id from the LPM map containing prefixes and country nth ids then do a bitwise check against the policy. The overhead we cause with the bitmap check is predictably small.</p>
+<h2 id="benchmarks">Benchmarks</h2>
+<p>So this experiment is a part of a firewall we’re developing and the benchmarks you’ll see here includes full overhead of the entire firewall pipeline. So in a similar setup with just a geoip blocking setup, you’ll likely achieve better results.</p>
+<p>Firewall Setup:</p>
+<pre>- CPU: 2x Intel(R) Xeon(R) Gold 6348 CPU @ 2.60GHz
+- NIC: 2x Intel (R) E810-2cqda2 (100G 2 ports)</pre>
+<p>Results:</p>
+<figure class="code">
+<pre>+----------+-----------+-----------+-------+------------+------------+-----------+
+| pkt size | filtered              | cpu   | line rate               | Bandwidth |
++          +-----------+-----------+       +------------+------------+           +
+|          | mpps      | gbps      | usage | mpps       | gbps       | filtered  |
++==========+===========+===========+=======+============+============+===========+
+| 1500     |      31.9 |     383.1 |   23% |       31.9 |      383.1 |      100% |
++----------+-----------+-----------+-------+------------+------------+-----------+
+| 1000     |      47.4 |     379.9 |   33% |       47.2 |      379.9 |      100% |
++----------+-----------+-----------+-------+------------+------------+-----------+
+| 512      |      81.0 |     334.0 |   59% |       81.4 |      334.0 |      100% |
++----------+-----------+-----------+-------+------------+------------+-----------+
+| 256      |     131.0 |     269.2 |   98% |      287.2 |      298.0 |       90% |
++----------+-----------+-----------+-------+------------+------------+-----------+
+| 128      |     132.5 |     135.7 |   98% |      380.0 |      204.0 |       66% |
++----------+-----------+-----------+-------+------------+------------+-----------+
+| 64       |     132.6 |      67.9 |   98% |      384.0 |      208.0 |       32% |
++----------+-----------+-----------+-------+------------+------------+-----------+</pre>
+<figcaption>Bechmark results</figcaption>
+</figure>
+<p>To summarize the benchmark results, smaller the packets, more stress it induces to firewall; we easily saturate line rate at reasonable packet sizes.</p>
+<p>Smaller packet sizes induces more stress because we need to process more packets to saturate same amount of line bandwidth which is quite visible on the benchmark results.</p>
+<section class="footnotes" role="doc-endnotes">
+<hr />
+<ol>
+<li id="fn1" role="doc-endnote"><p><a href="https://docs.cilium.io/en/v1.12/bpf/#xdp">Quoted From Cilium Docs</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
