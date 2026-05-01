@@ -3,6 +3,13 @@
 <meta name="date" content="2026-05-01 22:22:21">
 <meta name="updated" content="2026-06-26 22:22:21">
 
+These days, storing and showing what's visible on UI's and receipts are highly standardized and regulated by the industry standards such as PCI DSS. And even when you save your card on an ecommerce website, 
+which strictly follows the PCI DSS, your card can still be stolen - or derived. As it happened to me.
+<br><br>
+PCI DSS is the widely known and implemented industry standard for defining bare-minimum security measures that should be taken when handling sensitive banking data such as credit cards. 
+It's the layer of security to available data when an account is breached, or somehow the credit card data is taken by a third party, 
+it ensures the data is not fully available to the attacker, by restricting storage of some data by the entities, limiting the digits visible on the UI's, receipts, logs and anywhere else by masking. 
+<br>
 
 <figure class="media right">
     <pre>
@@ -18,14 +25,6 @@
     </pre>
     <figcaption>My credit card, as what's visible on a saved card on an ecommerce website.</figcaption>
 </figure>
-
-These days, storing and showing what's visible on UI's and receipts are highly standardized and regulated by the industry standards such as PCI DSS. And even when you save your card on an ecommerce website, 
-which strictly follows the PCI DSS, your card can still be stolen - or derived. As it happened to me.
-<br><br>
-PCI DSS is the widely known and implemented industry standard for defining bare-minimum security measures that should be taken when handling sensitive banking data such as credit cards. 
-It's the layer of security to available data when an account is breached, or somehow the credit card data is taken by a third party, 
-it ensures the data is not fully available to the attacker, by restricting storage of some data by the entities, limiting the digits visible on the UI's, receipts, logs and anywhere else by masking. 
-<br>
 
 <h3>What you can actually show with PCI-DSS 4</h3>
 <ul>
