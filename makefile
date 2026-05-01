@@ -39,18 +39,36 @@ BLOGNAMEESC := $(call escape_quote,$(BLOGNAME))
 BLOGDESCESC := $(call escape_quote,$(BLOGDESC))
 TITLESEPERATORESC := $(call escape_quote,$(TITLESEPERATOR))
 
+define metadata_value
+awk -v key="$(1)" 'tolower($$0) ~ /^[ \t]*<meta[ \t]/ { name = ""; content = ""; if (match($$0, /name="[^"]*"/)) { name = substr($$0, RSTART + 6, RLENGTH - 7) } if (match($$0, /content="[^"]*"/)) { content = substr($$0, RSTART + 9, RLENGTH - 10) } if (tolower(name) == tolower(key)) { print content; exit } }' "$(2)"
+endef
+
+define post_body
+awk 'tolower($$0) ~ /^[ \t]*<meta[ \t]/ && tolower($$0) ~ /name="(title|author|date|updated|description)"/ { next } { print }' "$(1)"
+endef
+
+define sorted_posts
+for post in $(POSTS); do POST_DATE=$$($(call metadata_value,date,$$post)); if [ -z "$$POST_DATE" ]; then echo "Missing required metadata 'date' in $$post" >&2; exit 1; fi; printf "%s\t%s\n" "$$POST_DATE" "$$post"; done | sort -r | cut -f2-
+endef
+
 # INDEX PAGE
 $(BUILDDIR)/$(INDEX): $(POSTS) $(TEMPLATEPATH)/index.html $(TEMPLATEPATH)/post_card.html $(TEMPDIR)/blog_menu_items
 	rm -f $(TEMPDIR)/blog_index_posts
-	for post in $$(ls -t '' $(POSTS) | tr '\n' ' ' | cut -d' ' -f 1-$(NUMINDEXPOSTS)); do \
-		TEMPLATE_POST_TITLE=$$(basename $$post | sed 's/_/ /g') \
+	for post in $$($(call sorted_posts) | head -n $(NUMINDEXPOSTS)); do \
+		POST_TITLE=$$($(call metadata_value,title,$$post)); \
+		POST_AUTHOR=$$($(call metadata_value,author,$$post)); \
+		POST_DATE=$$($(call metadata_value,date,$$post)); \
+		POST_DATE_UPDATED=$$($(call metadata_value,updated,$$post)); \
+		POST_DESC=$$($(call post_body,$$post) | envsubst | sed 's/<[^>]*>//g' | tr '\n' ' ' | cut -d' ' -f 1-100)...; \
+		if [ -z "$$POST_TITLE" ] || [ -z "$$POST_AUTHOR" ] || [ -z "$$POST_DATE" ] || [ -z "$$POST_DATE_UPDATED" ]; then echo "Missing required metadata in $$post" >&2; exit 1; fi; \
+		TEMPLATE_POST_TITLE="$$POST_TITLE" \
 		TEMPLATE_BLOG_ROOT=$$'$(BLOGROOT)' \
 		TEMPLATE_POST_URL=$$(echo $$post).html \
 		TEMPLATE_STATIC_PATH=$$'$(BLOGROOT)/$(STATICDIR)' \
-		TEMPLATE_POST_AUTHOR=$$(stat -c '%U' $$post) \
-		TEMPLATE_POST_DATE=$$(stat -c '%.19w' $$post) \
-		TEMPLATE_POST_DATE_UPDATED=$$(stat -c '%.19y' $$post) \
-		TEMPLATE_POST_DESC=$$(envsubst < $$post | sed 's/<[^>]*>//g' | tr '\n' ' ' | cut -d' ' -f 1-100)... \
+		TEMPLATE_POST_AUTHOR="$$POST_AUTHOR" \
+		TEMPLATE_POST_DATE="$$POST_DATE" \
+		TEMPLATE_POST_DATE_UPDATED="$$POST_DATE_UPDATED" \
+		TEMPLATE_POST_DESC="$$POST_DESC" \
 		envsubst < "$(TEMPLATEPATH)/post_card.html" >> $(TEMPDIR)/blog_index_posts ; \
 	done
 	TEMPLATE_TITLE=$$'$(BLOGNAMEESC)' \
@@ -64,11 +82,14 @@ $(BUILDDIR)/$(INDEX): $(POSTS) $(TEMPLATEPATH)/index.html $(TEMPLATEPATH)/post_c
 # POSTS INDEX
 $(BUILDDIR)/$(POSTSDIR)/index.html: $(POSTS) $(TEMPLATEPATH)/post.html $(TEMPLATEPATH)/post_index_card.html $(TEMPDIR)/blog_menu_items
 	rm -f $(TEMPDIR)/blog_index_all_posts
-	for post in $$(ls -t '' $(POSTS)); do \
-		TEMPLATE_POST_TITLE=$$(basename $$post | sed 's/_/ /g') \
+	for post in $$($(call sorted_posts)); do \
+		POST_TITLE=$$($(call metadata_value,title,$$post)); \
+		POST_DATE=$$($(call metadata_value,date,$$post)); \
+		if [ -z "$$POST_TITLE" ] || [ -z "$$POST_DATE" ]; then echo "Missing required metadata in $$post" >&2; exit 1; fi; \
+		TEMPLATE_POST_TITLE="$$POST_TITLE" \
 		TEMPLATE_BLOG_ROOT=$$'$(BLOGROOT)' \
 		TEMPLATE_POST_URL=$$(echo $$post).html \
-		TEMPLATE_POST_DATE=$$(stat -c '%.19w' $$post) \
+		TEMPLATE_POST_DATE="$$POST_DATE" \
 		envsubst < "$(TEMPLATEPATH)/post_index_card.html" >> $(TEMPDIR)/blog_index_all_posts ; \
 	done
 	TEMPLATE_TITLE=$$'$(BLOGNAMEESC)' \
@@ -84,24 +105,32 @@ $(TEMPDIR)/blog_menu_items: $(PAGES) $(TEMPLATEPATH)/menu_item.html
 	rm -f $(TEMPDIR)/blog_menu_items
 	touch $(TEMPDIR)/blog_menu_items
 
-	for page in $$(ls -tr '' $(PAGES)); do \
+	for page in $(PAGES); do \
+		PAGE_TITLE=$$($(call metadata_value,title,$$page)); \
+		if [ -z "$$PAGE_TITLE" ]; then echo "Missing required metadata 'title' in $$page" >&2; exit 1; fi; \
 		TEMPLATE_BLOG_ROOT=$$'$(BLOGROOT)' \
 		TEMPLATE_PAGE_URL=$$(echo $$page).html \
-		TEMPLATE_PAGE_NAME=$$(basename $$page | sed 's/_/ /g') \
+		TEMPLATE_PAGE_NAME="$$PAGE_TITLE" \
 		envsubst < "$(TEMPLATEPATH)/menu_item.html" >> $@ ; \
 	done
 
 # RSS
 $(BUILDDIR)/RSS.xml: $(POSTS) $(TEMPLATEPATH)/RSS.xml $(TEMPLATEPATH)/RSS_item.xml
 	rm -f $(TEMPDIR)/blog_rss_items
-	for post in $$(ls -t '' $(POSTS) | tr '\n' ' ' | cut -d' ' -f 1-$(NUMINDEXPOSTS)); do \
-		TEMPLATE_POST_TITLE=$$(basename $$post | sed 's/_/ /g') \
+	for post in $$($(call sorted_posts) | head -n $(NUMINDEXPOSTS)); do \
+		POST_TITLE=$$($(call metadata_value,title,$$post)); \
+		POST_AUTHOR=$$($(call metadata_value,author,$$post)); \
+		POST_DATE=$$($(call metadata_value,date,$$post)); \
+		POST_DATE_UPDATED=$$($(call metadata_value,updated,$$post)); \
+		POST_DESC=$$($(call post_body,$$post) | sed 's/<[^>]*>//g' | tr '\n' ' ' | cut -d' ' -f 1-100)...; \
+		if [ -z "$$POST_TITLE" ] || [ -z "$$POST_AUTHOR" ] || [ -z "$$POST_DATE" ] || [ -z "$$POST_DATE_UPDATED" ]; then echo "Missing required metadata in $$post" >&2; exit 1; fi; \
+		TEMPLATE_POST_TITLE="$$POST_TITLE" \
 		TEMPLATE_BLOG_ROOT=$$'$(BLOGROOT)' \
 		TEMPLATE_POST_URL=$$(echo $$post).html \
-		TEMPLATE_POST_AUTHOR=$$(stat -c '%U' $$post) \
-		TEMPLATE_POST_DATE=$$(stat -c '%.19w' $$post) \
-		TEMPLATE_POST_DATE_UPDATED=$$(stat -c '%.19y' $$post) \
-		TEMPLATE_POST_DESC=$$(cat $$post | sed 's/<[^>]*>//g' | tr '\n' ' ' | cut -d' ' -f 1-100)... \
+		TEMPLATE_POST_AUTHOR="$$POST_AUTHOR" \
+		TEMPLATE_POST_DATE="$$POST_DATE" \
+		TEMPLATE_POST_DATE_UPDATED="$$POST_DATE_UPDATED" \
+		TEMPLATE_POST_DESC="$$POST_DESC" \
 		envsubst < "$(TEMPLATEPATH)/RSS_item.xml" >> $(TEMPDIR)/blog_rss_items ; \
 	done
 	TEMPLATE_TITLE=$$'$(BLOGNAMEESC)' \
@@ -113,40 +142,38 @@ $(BUILDDIR)/RSS.xml: $(POSTS) $(TEMPLATEPATH)/RSS.xml $(TEMPLATEPATH)/RSS_item.x
 
 # INDIVIDUAL POSTS
 $(BUILDDIR)/$(POSTSDIR)/%.html: $(POSTSDIR)/% $(TEMPLATEPATH)/post.html $(TEMPDIR)/blog_menu_items
-	$(eval PAGETITLE := $(subst _, ,$<))
-	$(eval POSTTITLE := $(patsubst $(POSTSDIR)/%,%,$(PAGETITLE)))
-	$(eval POSTTITLE := $(call escape_quote,$(POSTTITLE)))
-
-	$(eval PAGETITLE := $(POSTTITLE)${TITLESEPERATORESC}$(BLOGNAMEESC))
-	
-	TEMPLATE_TITLE=$$'$(PAGETITLE)' \
+	POST_TITLE=$$($(call metadata_value,title,$<)); \
+	POST_AUTHOR=$$($(call metadata_value,author,$<)); \
+	POST_DATE=$$($(call metadata_value,date,$<)); \
+	POST_DATE_UPDATED=$$($(call metadata_value,updated,$<)); \
+	if [ -z "$$POST_TITLE" ] || [ -z "$$POST_AUTHOR" ] || [ -z "$$POST_DATE" ] || [ -z "$$POST_DATE_UPDATED" ]; then echo "Missing required metadata in $<" >&2; exit 1; fi; \
+	TEMPLATE_TITLE="$${POST_TITLE}"$$'$(TITLESEPERATORESC)$(BLOGNAMEESC)' \
 	TEMPLATE_EXTRA_MENU_ITEMS=$$(cat $(TEMPDIR)/blog_menu_items) \
 	TEMPLATE_BLOG_ROOT=$$'$(BLOGROOT)' \
-	TEMPLATE_POST_TITLE=$$'$(POSTTITLE)' \
+	TEMPLATE_POST_TITLE="$${POST_TITLE}" \
 	TEMPLATE_STATIC_PATH=$$'$(BLOGROOT)/$(STATICDIR)' \
-	TEMPLATE_POST_AUTHOR=$$(stat -c '%U' $<) \
-	TEMPLATE_POST_DATE=$$(stat -c '%.19w' $<) \
-	TEMPLATE_POST_DATE_UPDATED=$$(stat -c '%.19y' $<) \
-	TEMPLATE_BODY=$$(envsubst < $$'$<') \
+	TEMPLATE_POST_AUTHOR="$${POST_AUTHOR}" \
+	TEMPLATE_POST_DATE="$${POST_DATE}" \
+	TEMPLATE_POST_DATE_UPDATED="$${POST_DATE_UPDATED}" \
+	TEMPLATE_BODY=$$($(call post_body,$<) | envsubst) \
 	envsubst < $$'$(TEMPLATEPATH)/post.html' > $@
 
 # INDIVIDUAL PAGES
 $(BUILDDIR)/$(PAGESDIR)/%.html: $(PAGESDIR)/% $(TEMPLATEPATH)/page.html $(TEMPDIR)/blog_menu_items
-	$(eval PAGETITLE := $(subst _, ,$<))
-	$(eval POSTTITLE := $(patsubst $(PAGESDIR)/%,%,$(PAGETITLE)))
-	$(eval POSTTITLE := $(call escape_quote,$(POSTTITLE)))
-
-	$(eval PAGETITLE := $(POSTTITLE)${TITLESEPERATORESC}$(BLOGNAMEESC))
-	
-	TEMPLATE_TITLE=$$'$(PAGETITLE)' \
+	PAGE_TITLE=$$($(call metadata_value,title,$<)); \
+	PAGE_AUTHOR=$$($(call metadata_value,author,$<)); \
+	PAGE_DATE=$$($(call metadata_value,date,$<)); \
+	PAGE_DATE_UPDATED=$$($(call metadata_value,updated,$<)); \
+	if [ -z "$$PAGE_TITLE" ] || [ -z "$$PAGE_AUTHOR" ] || [ -z "$$PAGE_DATE" ] || [ -z "$$PAGE_DATE_UPDATED" ]; then echo "Missing required metadata in $<" >&2; exit 1; fi; \
+	TEMPLATE_TITLE="$${PAGE_TITLE}"$$'$(TITLESEPERATORESC)$(BLOGNAMEESC)' \
 	TEMPLATE_EXTRA_MENU_ITEMS=$$(cat $(TEMPDIR)/blog_menu_items) \
 	TEMPLATE_BLOG_ROOT=$$'$(BLOGROOT)' \
-	TEMPLATE_PAGE_TITLE=$$'$(POSTTITLE)' \
+	TEMPLATE_PAGE_TITLE="$${PAGE_TITLE}" \
 	TEMPLATE_STATIC_PATH=$$'$(BLOGROOT)/$(STATICDIR)' \
-	TEMPLATE_PAGE_AUTHOR=$$(stat -c '%U' $<) \
-	TEMPLATE_PAGE_DATE=$$(stat -c '%.19w' $<) \
-	TEMPLATE_PAGE_DATE_UPDATED=$$(stat -c '%.19y' $<) \
-	TEMPLATE_BODY=$$(envsubst < $$'$<') \
+	TEMPLATE_PAGE_AUTHOR="$${PAGE_AUTHOR}" \
+	TEMPLATE_PAGE_DATE="$${PAGE_DATE}" \
+	TEMPLATE_PAGE_DATE_UPDATED="$${PAGE_DATE_UPDATED}" \
+	TEMPLATE_BODY=$$($(call post_body,$<) | envsubst) \
 	envsubst < $$'$(TEMPLATEPATH)/page.html' > $@
 
 $(TEMPLATESDIR)/$(TEMPLATE)/%.html:

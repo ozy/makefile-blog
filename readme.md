@@ -6,8 +6,9 @@ Makefile-Blog is a static blog website generator written in makefile with variou
 
 Makefile-Blog requires following packages for generating static files:
 
-* coreutils - (tr, ls, cut, basename, stat, echo, cat)
+* coreutils - (tr, ls, cut, sort, head, echo, cat)
 * bash
+* awk
 * sed
 * gettext - (envsubst)
 * make
@@ -23,6 +24,19 @@ $ make
 ```
 
 Also, building individual pages is parallelization compatible. So running with ```make -j8``` is possible.
+
+Posts and pages start with HTML metadata tags. Metadata is manual and is used for the title, author and dates shown in indexes, posts and RSS output.
+
+```html
+<meta name="title" content="My First Post">
+<meta name="author" content="Ada Lovelace">
+<meta name="date" content="2026-05-01">
+<meta name="updated" content="2026-05-02">
+
+<p>Hello World</p>
+```
+
+The `title`, `author`, `date` and `updated` metadata fields are required. Post indexes are sorted by the `date` metadata value. Post descriptions are generated automatically from the post body.
 
 ### Configuration
 Variables in the makefile can be either manually modified or given through environment such as ```make BLOGNAME='My First Blog'```. Some fields you may want to change as following:
