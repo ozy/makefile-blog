@@ -59,7 +59,7 @@ $(BUILDDIR)/$(INDEX): $(POSTS) $(TEMPLATEPATH)/index.html $(TEMPLATEPATH)/post_c
 		POST_AUTHOR=$$($(call metadata_value,author,$$post)); \
 		POST_DATE=$$($(call metadata_value,date,$$post)); \
 		POST_DATE_UPDATED=$$($(call metadata_value,updated,$$post)); \
-		POST_DESC=$$($(call post_body,$$post) | envsubst | sed 's/<[^>]*>//g' | tr '\n' ' ' | cut -d' ' -f 1-100)...; \
+		POST_DESC=$$($(call post_body,$$post) | TEMPLATE_STATIC_PATH=$$'$(BLOGROOT)/$(STATICDIR)' envsubst | sed 's/<[^>]*>//g' | tr '\n' ' ' | cut -d' ' -f 1-100)...; \
 		if [ -z "$$POST_TITLE" ] || [ -z "$$POST_AUTHOR" ] || [ -z "$$POST_DATE" ] || [ -z "$$POST_DATE_UPDATED" ]; then echo "Missing required metadata in $$post" >&2; exit 1; fi; \
 		TEMPLATE_POST_TITLE="$$POST_TITLE" \
 		TEMPLATE_BLOG_ROOT=$$'$(BLOGROOT)' \
@@ -147,6 +147,7 @@ $(BUILDDIR)/$(POSTSDIR)/%.html: $(POSTSDIR)/% $(TEMPLATEPATH)/post.html $(TEMPDI
 	POST_DATE=$$($(call metadata_value,date,$<)); \
 	POST_DATE_UPDATED=$$($(call metadata_value,updated,$<)); \
 	if [ -z "$$POST_TITLE" ] || [ -z "$$POST_AUTHOR" ] || [ -z "$$POST_DATE" ] || [ -z "$$POST_DATE_UPDATED" ]; then echo "Missing required metadata in $<" >&2; exit 1; fi; \
+	TEMPLATE_BODY=$$($(call post_body,$<) | TEMPLATE_STATIC_PATH=$$'$(BLOGROOT)/$(STATICDIR)' envsubst); \
 	TEMPLATE_TITLE="$${POST_TITLE}"$$'$(TITLESEPERATORESC)$(BLOGNAMEESC)' \
 	TEMPLATE_EXTRA_MENU_ITEMS=$$(cat $(TEMPDIR)/blog_menu_items) \
 	TEMPLATE_BLOG_ROOT=$$'$(BLOGROOT)' \
@@ -155,7 +156,7 @@ $(BUILDDIR)/$(POSTSDIR)/%.html: $(POSTSDIR)/% $(TEMPLATEPATH)/post.html $(TEMPDI
 	TEMPLATE_POST_AUTHOR="$${POST_AUTHOR}" \
 	TEMPLATE_POST_DATE="$${POST_DATE}" \
 	TEMPLATE_POST_DATE_UPDATED="$${POST_DATE_UPDATED}" \
-	TEMPLATE_BODY=$$($(call post_body,$<) | envsubst) \
+	TEMPLATE_BODY="$${TEMPLATE_BODY}" \
 	envsubst < $$'$(TEMPLATEPATH)/post.html' > $@
 
 # INDIVIDUAL PAGES
@@ -165,6 +166,7 @@ $(BUILDDIR)/$(PAGESDIR)/%.html: $(PAGESDIR)/% $(TEMPLATEPATH)/page.html $(TEMPDI
 	PAGE_DATE=$$($(call metadata_value,date,$<)); \
 	PAGE_DATE_UPDATED=$$($(call metadata_value,updated,$<)); \
 	if [ -z "$$PAGE_TITLE" ] || [ -z "$$PAGE_AUTHOR" ] || [ -z "$$PAGE_DATE" ] || [ -z "$$PAGE_DATE_UPDATED" ]; then echo "Missing required metadata in $<" >&2; exit 1; fi; \
+	TEMPLATE_BODY=$$($(call post_body,$<) | TEMPLATE_STATIC_PATH=$$'$(BLOGROOT)/$(STATICDIR)' envsubst); \
 	TEMPLATE_TITLE="$${PAGE_TITLE}"$$'$(TITLESEPERATORESC)$(BLOGNAMEESC)' \
 	TEMPLATE_EXTRA_MENU_ITEMS=$$(cat $(TEMPDIR)/blog_menu_items) \
 	TEMPLATE_BLOG_ROOT=$$'$(BLOGROOT)' \
@@ -173,7 +175,7 @@ $(BUILDDIR)/$(PAGESDIR)/%.html: $(PAGESDIR)/% $(TEMPLATEPATH)/page.html $(TEMPDI
 	TEMPLATE_PAGE_AUTHOR="$${PAGE_AUTHOR}" \
 	TEMPLATE_PAGE_DATE="$${PAGE_DATE}" \
 	TEMPLATE_PAGE_DATE_UPDATED="$${PAGE_DATE_UPDATED}" \
-	TEMPLATE_BODY=$$($(call post_body,$<) | envsubst) \
+	TEMPLATE_BODY="$${TEMPLATE_BODY}" \
 	envsubst < $$'$(TEMPLATEPATH)/page.html' > $@
 
 $(TEMPLATESDIR)/$(TEMPLATE)/%.html:

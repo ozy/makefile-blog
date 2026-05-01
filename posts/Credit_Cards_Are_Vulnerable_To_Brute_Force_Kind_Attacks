@@ -1,7 +1,7 @@
 <meta name="title" content="Credit Cards Are Vulnerable To Brute Force Kind Attacks">
 <meta name="author" content="met">
 <meta name="date" content="2026-05-01 22:22:21">
-<meta name="updated" content="2026-06-26 22:22:21">
+<meta name="updated" content="2026-05-01 22:22:21">
 
 These days, storing and showing what's visible on UI's and receipts are highly standardized and regulated by the industry standards such as PCI DSS. And even when you save your card on an ecommerce website, 
 which strictly follows the PCI DSS, your card can still be stolen - or derived. As it happened to me.
@@ -115,3 +115,4 @@ This happened last year, and since then the party that converts payments from cr
 <h2>References</h2>
 <a href="https://en.wikipedia.org/wiki/Payment_card_number">Wikipedia - PAN</a><br>
 <a href="https://www.middlebury.edu/sites/default/files/2025-01/PCI-DSS-v4_0_1.pdf">PCI DSS v4.0.1</a><br>
+<a href="https://www.linkedin.com/in/libertypaul/">Pavel, my payments engineer friend</a>
