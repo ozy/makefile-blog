@@ -1,3 +1,7 @@
+<meta name="title" content="High Performance Geoip Blocking in eBpf with XDP">
+<meta name="author" content="met">
+<meta name="date" content="2022-11-12 18:09:26">
+<meta name="updated" content="2022-11-12 18:09:26">
 <p>XDP stands for eXpress Data Path and provides a framework for BPF that enables high-performance programmable packet processing in the Linux kernel. It runs the BPF program at the earliest possible point in software, namely at the moment the network driver receives the packet. <a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
 <p>According to customer needs, we need to drop or pass packets for a list of source countries. This necessity varies by customer, but some use cases include DNS infrastructures having a specific point of presence.</p>
 <p>So it needs to be highly configurable in terms of source countries and type of the list as block or allow while maintaining performance.</p>

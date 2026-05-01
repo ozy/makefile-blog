@@ -1,0 +1,118 @@
+<meta name="title" content="Credit Cards Are Vulnerable To Brute Force Kind Attacks">
+<meta name="author" content="met">
+<meta name="date" content="2026-05-01 22:22:21">
+<meta name="updated" content="2026-06-26 22:22:21">
+
+
+<figure class="media right">
+    <pre>
++------------------------------------+
+|                                    |
+|  1234 56** **** 7890               |
+|                                    |
+|  VALID THRU                        |
+|  08/29                             |
+|                                    |
+|  METIN OZYILDIRIM                  |
++------------------------------------+
+    </pre>
+    <figcaption>My credit card, as what's visible on a saved card on an ecommerce website.</figcaption>
+</figure>
+
+These days, storing and showing what's visible on UI's and receipts are highly standardized and regulated by the industry standards such as PCI DSS. And even when you save your card on an ecommerce website, 
+which strictly follows the PCI DSS, your card can still be stolen - or derived. As it happened to me.
+<br><br>
+PCI DSS is the widely known and implemented industry standard for defining bare-minimum security measures that should be taken when handling sensitive banking data such as credit cards. 
+It's the layer of security to available data when an account is breached, or somehow the credit card data is taken by a third party, 
+it ensures the data is not fully available to the attacker, by restricting storage of some data by the entities, limiting the digits visible on the UI's, receipts, logs and anywhere else by masking. 
+<br>
+
+<h3>What you can actually show with PCI-DSS 4</h3>
+<ul>
+    <li>Primary Account Number (PAN) - PAN is masked when displayed. The BIN and Last 4 digits can be displayed</li>
+    <li>Cardholder Name - As is</li>
+    <li>Service Code - As is</li>
+    <li>Expiration Date - As is</li>
+</ul>
+
+<h3>What you can't show</h3>
+<ul>
+    <li>Full Track Data</li>
+    <li>Card verification code</li>
+    <li>PIN/PIN Block</li>
+</ul>
+
+As said, it's the minimums that the industry should've taken into consideration when designing their flows. But in practice, because of the nature of certification and the required amount of tests to get certified 
+makes companies to implement only bare minimums as described in the standards. And when they are informed about the vulnerabilities their behaviors cause, they don't want to change as they already deemed enough for the certification process.
+<br><br>
+As a consumer, I thought I was safe; when saving my credit card to a billion dollar valued european merchant, or when i purchase something from supermarket and ignore the receipt, but the reality is slightly different from that.
+<br>
+
+<h2>Story Time</h2>
+
+I have a virtual credit card with limits, 2FA (3d Secure) enabled, and only saved and used in very well known merchants. But i got an SMS, with a purchase attempt from a website i saved my card to. You know, it happens a lot when you use the same password for everywhere, which is not the case for me anymore but that was an account that i set up long ago, that is my fault. But upon getting the SMS, I immediately logged in, changed passwords, checked if something bought, significantly reduced limits of my virtual card. Not completely disabled my card, because, it's not compromised?
+<br><br>
+
+Or, i thought so. Later that day, around 6 hours later than the initial breach, I suddenly got 3-4 3D Secure SMS attempts from different merchants, that i didn't use. All unsuccessful attempts, but the data from here is valuable for understanding how it happened.
+<br><br>
+
+After couple of minutes, while i'm on a call with my bank to disable that card completely, they used another merchant, without 3D Secure; this time withdrawing all available limit (which i reduced) with multiple payments. This time the money is withdrawn to a e-wallet of a market, which allows you to withdraw the amount in cash from that market.
+<br><br>
+
+Honestly I'm impressed, this is a well designed pipeline, with more untraceability than i expected. At the end, after my chargeback request, i got the money back from my bank. But what exactly happened?
+
+<h2>How did they do it?</h2>
+The attackers breached my account, I know that part. But what did they got in the couple minutes before i react. They tried a purchase, seeing the banks 3D Secure page, cancelled the order and left. How it's enough to do a purchase from another merchant.
+<br><br>
+The data they took with the attempt of purchase is the card is still usable (not cancelled), the bank name (from the 3D secure page), my masked credit card number and the full expiration date. Normally for a purchase to complete from my card seamlessly, they should have the full PAN number (16 digit one), the expiration date, the CVC2 number, my phone used for 3D Secure etc. They don't have all of these details, or i thought so.
+
+<h2>The PAN Number</h2>
+A payment card number, primary account number (PAN), is the card identifier found on payment cards, such as credit cards and debit cards, as well as stored-value cards, gift cards and other similar cards. In some situations the card number is referred to as a bank card number. <a href="https://en.wikipedia.org/wiki/Payment_card_number">[wikipedia]</a>
+<br><br>
+PANs have a certain level of internal structure and share a common numbering scheme set by ISO/IEC 7812. The parts of the number are as follows:
+<ul>
+    <li>a six or eight-digit Issuer Identification Number (IIN)</li>
+    <li>a variable length (up to 12 digits) individual account identifier</li>
+    <li>a single check digit calculated using the Luhn algorithm</li>
+</ul>
+And the PCI DSS says the first 6 digits and last 4 digits can be safely shown along with the expiration date, as the first six digits are not sensitive, and last four to discriminate. 
+But then what's remaining? My card has 16 digits, first six are known, last four are known and 1 out of 10 numbers can be a valid credit card because of the checksum. Thats 99.999 possible credit card numbers.
+<br><br>
+
+But my card and bank doesn't allow merchants to proceed with payments using only the credit card number, they should at least use PAN, Expiration date and the CVV altogether. Some banks and payment gateways can process payments only using a credit card number, that's another unbelievable point for me. My bank rejects the payments without these required values, but you know what, it also tells you which part of the data was faulty. The response codes from payment gateways, are something like that
+<ul>
+    <li>That's not a valid credit card</li>
+    <li>That card is expired</li>
+    <li>You got all the details right but CVV is not correct</li>
+</ul>
+
+The fuck? It literally helps you to brute force it. And you only need to brute force 99k numbers first, then another 999 times for the CVV with some slow rate for the second phase and you got the card from masked PAN number. The attackers in my case did it in 6 hours, using multiple endpoints stolen from multiple merchants that provide credit card validation. Similar to the validation that tries to charge 1 USD from your card to validate your account and payment details. They got these API's ripped from register flows of some unrelated e-commerce applications.
+
+<br><br>
+
+So in practice, the attackers tested at rate of 6 request per second (around 2 request per second per API). That rate is very hard to spot from the merchants perspective, as the source ip's are changing via proxies, the credit card numbers are not same as the nature of the brute forcing and the very small rate of requests.
+<br><br>
+And it turns out there's also a list of merchants who are exempt from 3D Secure stuff. So they are deemed friendly by the bank, and can take payments and subscriptions without 3D Secure, which in turn they get the liability in case of chargebacks.
+<br><br>
+It was my fault to use unsafe passwords, but the PCI DSS is not only for e-commerce, it also standardizes the information to disclose on physical receipts. It happened to me because of a breached account and it can happen to you because you throw a receipt to a bin without destroying it.
+
+<figure class="media right">
+    <img class="fill" src="${TEMPLATE_STATIC_PATH}/5/receipt.jpg" alt="image showing a receipt that shows first 6 and last 4 digits of the credit card.">
+    <figcaption>A receipt, that i used to ignore. Depicting quite generous amount of data.</figcaption>
+</figure>
+
+
+<h2>What happened next?</h2>
+I got the money back via chargeback in short time.
+<br><br>
+I talked to the merchant about how their credit card to cash system is used withdraw money from my credit card without my authorization, they didn't care. Instead asked me to contact my bank.
+<br><br>
+I contacted the e commerce website in question about how exposing 10 letters of credit card along with the expiration date makes it easier. They didn't accept it as an vulnerability, instead they said they designed it intentionally to match the standard (PCI DSS 3 and 4).
+<br><br>
+Then i got curious and explained the situation to people that write payment API's and work in the payments industry, they didn't even got surprised; instead they told me there are merchants that can do transactions even without expiration date. It seems like to me, everybody knows it. The people creating gateways, the engineers, the hackers.
+<br><br>
+This happened last year, and since then the party that converts payments from credit cards to cast, is no longer doing that without 3d secure. My bank still has a generous rate limit for brute forcing CVC2 that temporarily blocks use of that card for like couple of minutes.
+
+<h2>References</h2>
+<a href="https://en.wikipedia.org/wiki/Payment_card_number">Wikipedia - PAN</a><br>
+<a href="https://www.middlebury.edu/sites/default/files/2025-01/PCI-DSS-v4_0_1.pdf">PCI DSS v4.0.1</a><br>

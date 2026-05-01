@@ -1,3 +1,7 @@
+<meta name="title" content="The Idea Of Makefile Blog">
+<meta name="author" content="met">
+<meta name="date" content="2020-06-04 18:01:21">
+<meta name="updated" content="2020-06-26 20:37:30">
 <figure class="media right">
     <img class="fill" src="${TEMPLATE_STATIC_PATH}/1/meme.jpg">
     <figcaption>The meme about this post, <a href="https://twitter.com/vincentdnl">by @vincentdnl</a>.</figcaption>

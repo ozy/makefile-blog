@@ -1,3 +1,7 @@
+<meta name="title" content="Linux Kernel Overlapping Internet Fragment Bug">
+<meta name="author" content="met">
+<meta name="date" content="2020-09-12 13:00:21">
+<meta name="updated" content="2020-09-15 16:13:24">
 <p>Some Linux kernel versions had a bug in their ip fragmentation module which caused system crash during handling of a malformed ip fragment back in 1997.</p>
 
 <h2>What's an Ip Fragment</h2>
